@@ -22,9 +22,12 @@ namespace SMART2.Domain
                 .HasIndex(a => a.Code)
                 .IsUnique();
             builder.Entity<EquipmentContract>()
-                .HasMany(a => a.ProcessEquipment)
+                .HasMany(a => a.ProcessEquipments)
                 .WithMany(a => a.EquipmentContracts)
                 .UsingEntity("ProcessEquipmentEquipmentContracts");
+            builder.Entity<EquipmentContract>()
+                .HasMany(a => a.ProductionFacilities)
+                .WithOne(a => a.EquipmentContract);
         }
     }
 }

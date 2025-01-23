@@ -7,5 +7,6 @@
         public double StandardArea { get; set; }
         public string Code { get; set; }
         public bool Occupied { get; set; }
+        public EquipmentContract? EquipmentContract  { get; set; }
     }
 }

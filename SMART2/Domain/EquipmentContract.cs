@@ -3,8 +3,8 @@
     public class EquipmentContract
     {
         public int Id { get; set; }
-        public IEnumerable<ProcessEquipment> ProcessEquipment { get; set; }
-        public ProductionFacility ProductionFacility { get; set; }
+        public IEnumerable<ProcessEquipment> ProcessEquipments { get; set; }
+        public IEnumerable<ProductionFacility> ProductionFacilities { get; set; }
         public int TotalEquipmentUnits { get; set; }
     }
 }

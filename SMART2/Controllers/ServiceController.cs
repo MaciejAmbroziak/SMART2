@@ -41,6 +41,25 @@ namespace SMART2.Controllers
             return equipmentContract;
         }
 
+        [HttpGet("{productionFacilityCode}/{processEquipmentCode}/{equipmmentQuantity}")]
+        public async Task<ActionResult<EquipmentContract>> GetEquipmentContract(string productionFacilityCode, string processEquipmentCode, int equipmentQuantity)
+        {
+            var combinedEquipmentContract = _context.EquipmentContracts.Where(c => c.TotalEquipmentUnits == equipmentQuantity)
+                .Include(a => a.ProcessEquipments.Where(a => a.Code == processEquipmentCode))
+                .Include(b => b.ProductionFacilities.Where(a => a.Code == productionFacilityCode)).FirstOrDefault();
+
+            //var equipmentContract = await _context.EquipmentContracts.FindAsync(id);
+
+            //if (equipmentContract == null)
+            //{
+            //    return NotFound();
+            //}
+
+            return combinedEquipmentContract;
+        }
+
+
+
         // PUT: api/Service/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]

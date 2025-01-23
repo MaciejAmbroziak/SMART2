@@ -11,10 +11,8 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-var conStr = new SqlConnectionStringBuilder(
-        builder.Configuration.GetConnectionString("SMART2Database")).ToString();
 builder.Services.AddDbContextFactory<DomainDbContext>(
-    options => options.UseSqlServer(conStr));
+options => options.UseSqlServer(builder.Configuration.GetConnectionString("SMART2Database")));
 
 var app = builder.Build();
 
