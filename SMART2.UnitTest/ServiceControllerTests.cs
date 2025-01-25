@@ -40,7 +40,7 @@ namespace SMART2.UnitTest
         }
 
         [Fact]
-        public async Task GetEquipmentContacts_DoesNotReturnNull()
+        public async Task GetEquipmentContracts_DoesNotReturnNull()
         {
             //Arrange
             var dbContextOptions = new DbContextOptionsBuilder<DomainDbContext>()
@@ -60,7 +60,7 @@ namespace SMART2.UnitTest
         }
 
         [Fact]
-        public async Task GetEquipmentContacts_Value_DoesNotReturnNull()
+        public async Task GetEquipmentContracts_Value_DoesNotReturnNull()
         {
             //Arrange
             var dbContextOptions = new DbContextOptionsBuilder<DomainDbContext>()
@@ -80,7 +80,7 @@ namespace SMART2.UnitTest
         }
 
         [Fact]
-        public async Task GetEquipmentContacts_ReturnProperNumberOfContracts()
+        public async Task GetEquipmentContracts_ReturnProperNumberOfContracts()
         {
             //Arrange
             var dbContextOptions = new DbContextOptionsBuilder<DomainDbContext>()
@@ -97,6 +97,26 @@ namespace SMART2.UnitTest
 
             // Assert
             Assert.Equal(equipmentContracts.Value.Count(), _equipmentContractList.Count());
+        }
+
+        [Fact]
+        public async Task GetEquipmentContracts_ForEachContract_ReturnsTheSameSetbeOfEquipmentContract()
+        {
+            // Arrange
+            var dbContextOptions = new DbContextOptionsBuilder<DomainDbContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString()).Options;
+            var context = new DomainDbContext(dbContextOptions);
+            context.AddRange(_processEquipmentList);
+            context.AddRange(_productionFacilityList);
+            context.AddRange(_equipmentContractList);
+            context.SaveChanges();
+            var service = new ServiceController(context);
+
+            // Act
+            var equipmentContracts = await service.GetEquipmentContracts();
+
+            // Assert
+            Assert.Equal(equipmentContracts.Value, _equipmentContractList.AsEnumerable());
         }
     }
 }
