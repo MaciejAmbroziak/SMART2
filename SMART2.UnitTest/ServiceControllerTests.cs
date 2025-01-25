@@ -28,14 +28,15 @@ namespace SMART2.UnitTest
             new ProductionFacility { Name = "Room 3", StandardArea = 14.2, Code = "1234567890", Occupied = true },
             new ProductionFacility { Name = "Room 4", StandardArea = 200, Code = "Lsingdlwnbgkj-12", Occupied = true },
             new ProductionFacility { Name = "Room 5", StandardArea = 200, Code = "ABC 123456", Occupied = true },
-            new ProductionFacility { Name = "Room 6", StandardArea = 201, Code = "ABC 123456", Occupied = true }
+            new ProductionFacility { Name = "Room 6", StandardArea = 201, Code = "ABC 123456", Occupied = true },
+            new ProductionFacility { Name = "Room 7", StandardArea = 300, Code = "AAABB", Occupied = false}
         };
 
             _equipmentContractList = new List<EquipmentContract>
         {
-            new EquipmentContract { ProcessEquipments = _processEquipmentList, ProductionFacilities = _productionFacilityList, TotalEquipmentUnits = _processEquipmentList.Count() },
-            new EquipmentContract { ProcessEquipments = _processEquipmentList.Skip(1).ToList(), ProductionFacilities = _productionFacilityList.Skip(1).ToList(), TotalEquipmentUnits = _processEquipmentList.Skip(1).Count() },
-            new EquipmentContract { ProcessEquipments = _processEquipmentList.Skip(2).ToList(), ProductionFacilities = _productionFacilityList.Skip(2).ToList(), TotalEquipmentUnits = _processEquipmentList.Skip(2).Count() }
+            new EquipmentContract { ProcessEquipments = _processEquipmentList, ProductionFacilities = _productionFacilityList.Take(3).ToList(), TotalEquipmentUnits = _processEquipmentList.Take(3).Count() },
+            new EquipmentContract { ProcessEquipments = _processEquipmentList.Skip(1).ToList(), ProductionFacilities = _productionFacilityList.Skip(1).Take(2).ToList(), TotalEquipmentUnits = _processEquipmentList.Skip(1).Count() },
+            new EquipmentContract { ProcessEquipments = _processEquipmentList.Skip(2).ToList(), ProductionFacilities = _productionFacilityList.Skip(2).Take(1).ToList(), TotalEquipmentUnits = _processEquipmentList.Skip(2).Count() }
         };
         }
 
@@ -209,7 +210,71 @@ namespace SMART2.UnitTest
             var sut = await service.GetEquipmentContract(id);
 
             // Assert
-            Assert.Equal(sut.Value, _equipmentContractList[id -1]);
+            Assert.Equal(sut.Value, _equipmentContractList[id - 1]);
+        }
+
+        [Theory]
+        [InlineData("Room 7", "swhdfuoirhgfweorgh", 3)]
+        public async Task PostEquipmentContractByParamters_ReturnsEquipmentContract_IfAllConditionsMet(string productionFacilityName, string processEquipmentCode, int equipmentQuantity)
+        {
+            // Arrange
+            var dbContextOptions = new DbContextOptionsBuilder<DomainDbContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString()).Options;
+            var context = new DomainDbContext(dbContextOptions);
+            context.AddRange(_processEquipmentList);
+            context.AddRange(_productionFacilityList);
+            context.AddRange(_equipmentContractList);
+            context.SaveChanges();
+            var service = new ServiceController(context);
+
+            var processEquipmentsCreate = new List<ProcessEquipment>();
+            var productionFacilitiesCreate = new List<ProductionFacility>();
+
+            var processEquipment = context.ProcessEquipments.Where(a=>a.Code == processEquipmentCode).FirstOrDefault();
+            var productionFacility = context.ProductionFacilities.Where(a => a.Name == productionFacilityName).FirstOrDefault();
+
+            for (int i = 0; i < equipmentQuantity; i++) 
+            {
+                processEquipmentsCreate.Add(processEquipment);
+            }
+            productionFacilitiesCreate.Add(productionFacility);
+
+            var equipmentContract = new EquipmentContract()
+            {
+                ProductionFacilities = productionFacilitiesCreate,
+                ProcessEquipments = processEquipmentsCreate,
+                TotalEquipmentUnits = equipmentQuantity
+            };
+
+            // Act
+            var sut = await service.PostEquipmentContract(productionFacilityName, processEquipmentCode, equipmentQuantity);
+
+            // Assert
+            Assert.Equal(equipmentContract.TotalEquipmentUnits, sut.Value.TotalEquipmentUnits);
+            Assert.Equal(equipmentContract.ProductionFacilities.Count(), sut.Value.ProductionFacilities.Count());
+            Assert.Equal(equipmentContract.ProcessEquipments.Count(), sut.Value.ProcessEquipments.Count());
+        }
+
+
+
+
+        [Theory]
+        [InlineData("AAABBBCCC1234567890", "swhdfuoirhgfweorgh", 3)]
+        public async Task PostEquipmentContractByParamters_ReturnsBadRequest_IfProcessEquipmentDoesNotExistsInDatbase(string productionFacilityName, string processEquipmentCode, int equipmentQuantity)
+        {
+            // Arrange
+            var dbContextOptions = new DbContextOptionsBuilder<DomainDbContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString()).Options;
+            var context = new DomainDbContext(dbContextOptions);
+            context.AddRange(_processEquipmentList);
+            context.AddRange(_productionFacilityList);
+            context.AddRange(_equipmentContractList);
+            context.SaveChanges();
+            var service = new ServiceController(context);
+
+            // Assert
+            service.PostEquipmentContract(productionFacilityName, processEquipmentCode, equipmentQuantity);
+
         }
     }
 }

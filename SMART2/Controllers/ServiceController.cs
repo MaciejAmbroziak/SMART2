@@ -127,36 +127,40 @@ namespace SMART2.Controllers
         [HttpPost("ByParameters")]
         public async Task<ActionResult<EquipmentContract>> PostEquipmentContract(string productionFacilityName, string processEquipmentCode, int equipmentQuantity)
         {
-            IEnumerable<ProcessEquipment> processEquipments = new List<ProcessEquipment>();
+            var processEquipments = new List<ProcessEquipment>();
 
             var processEquipment = _context.ProcessEquipments.Where(a => a.Code == processEquipmentCode);
 
             if (!processEquipment.Any())
             {
-                return BadRequest("Try to create process equipment first");
+                return BadRequest("Try to create process equipment first.");
             }
             else if (processEquipment.Count() > 1)
             {
-                return BadRequest("There are more than one process euqipment in database of this type allready - please contact adninistrator");
+                return BadRequest("There are more than one process equipment in database of this type already - please contact administrator.");
             }
             var equipment = processEquipment.First();
 
             for (int i = 0; i < equipmentQuantity; i++)
             {
-                processEquipments.Append(equipment);
+                processEquipments.Add(equipment);
             }
-
 
             if (!_context.ProductionFacilities.Where(a => !a.Occupied).Any())
             {
-                return BadRequest("Thera are no unocupied facilities");
+                return BadRequest("There are no unoccupied facilities.");
             }
 
-            var productionFacilities = await _context.ProductionFacilities.Where(a => !a.Occupied).ToListAsync();
-            
-            
-           
-            return await AddContractAsync(productionFacilities, processEquipments);
+            var productionFacility = await _context.ProductionFacilities
+                .Where(a => a.Name == productionFacilityName)
+                .FirstOrDefaultAsync();
+
+            if (productionFacility == null)
+            {
+                return BadRequest("Production facility not found.");
+            }
+
+            return await AddContractAsync(productionFacility, processEquipments);
         }
 
         // DELETE: api/Service/5
@@ -175,52 +179,39 @@ namespace SMART2.Controllers
             return NoContent();
         }
 
-        private bool AreaAvailable(IEnumerable<ProcessEquipment> processEquipment, IEnumerable<ProductionFacility> productionFacilities)
+        private bool AreaAvailable(IEnumerable<ProcessEquipment> processEquipment, ProductionFacility productionFacility)
         {
             var processEquipmentTotalArea = processEquipment.Sum(a=>a.Area);
-            var productionFacilitiesTotalArea = productionFacilities.Sum(a=>a.StandardArea);
-            return productionFacilitiesTotalArea > processEquipmentTotalArea;
+            var productionFacilityTotalArea = productionFacility.StandardArea;
+            return productionFacilityTotalArea >= processEquipmentTotalArea;
         }
 
-        private async Task<ActionResult<EquipmentContract>> AddContractAsync(IEnumerable<ProductionFacility> productionFacilities, IEnumerable<ProcessEquipment> processEquipments)
+        private async Task<ActionResult<EquipmentContract>> AddContractAsync(ProductionFacility productionFacility, List<ProcessEquipment> processEquipments)
         {
-            IEnumerable<ProductionFacility> result = new List<ProductionFacility>();
+            var facilities = new List<ProductionFacility>();
 
-            if (!AreaAvailable(processEquipments, productionFacilities))
+            if (!AreaAvailable(processEquipments, productionFacility))
             {
                 return BadRequest("There is not enough space");
             }
 
-            var largestProductionFacilityStandardArea = productionFacilities.OrderBy(a => a.StandardArea).Last().StandardArea;
-            var largestProcessEquipmentArea = processEquipments.OrderBy(a => a.Area).Last().Area;
-            if (largestProductionFacilityStandardArea < largestProcessEquipmentArea)
+            var productionFacilityStandardArea = productionFacility.StandardArea;
+            var processEquipmentLargestArea = processEquipments.OrderBy(a => a.Area).First().Area;
+            if (productionFacilityStandardArea <= processEquipmentLargestArea)
             {
-                return BadRequest("The largest facility is smaller than the largest process equipment");
+                return BadRequest("The facility is smaller than the smallest process equipment");
             }
-
-            foreach (var processEquipment in processEquipments)
-            {
-                ProductionFacility pick;
-                try
-                {
-                    pick = productionFacilities.Where(a => a.StandardArea > processEquipment.Area).OrderBy(a => a.StandardArea).First();
-                    pick.Occupied = true;
-                }
-                catch (ArgumentNullException ex)
-                {
-                    return BadRequest(ex.Message + "There is no space for particular process equipment");
-                }                
-                result.Append(pick);
-            }
+           
 
             var contract = new EquipmentContract();
-            contract.ProductionFacilities = productionFacilities;
+            contract.ProductionFacilities = facilities;
             contract.ProcessEquipments = processEquipments;
             contract.TotalEquipmentUnits = processEquipments.Count();
 
-            await _context.AddRangeAsync(contract);
+            await _context.EquipmentContracts.AddAsync(contract);
             await _context.SaveChangesAsync();
-            return CreatedAtAction("GetEquipmentContract", new { id = contract.Id }, contract);
+
+            return Ok(contract);
         }
 
         private bool EquipmentContractExists(int id)
