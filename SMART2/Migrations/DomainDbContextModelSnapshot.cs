@@ -34,7 +34,7 @@ namespace SMART2.Migrations
 
                     b.HasIndex("ProcessEquipmentsId");
 
-                    b.ToTable("ProcessEquipmentEquipmentContracts");
+                    b.ToTable("ProcessEquipmentEquipmentContracts", (string)null);
                 });
 
             modelBuilder.Entity("SMART2.Domain.EquipmentContract", b =>
@@ -50,7 +50,7 @@ namespace SMART2.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("EquipmentContracts");
+                    b.ToTable("EquipmentContracts", (string)null);
                 });
 
             modelBuilder.Entity("SMART2.Domain.ProcessEquipment", b =>
@@ -77,7 +77,7 @@ namespace SMART2.Migrations
                     b.HasIndex("Code")
                         .IsUnique();
 
-                    b.ToTable("ProcessEquipments");
+                    b.ToTable("ProcessEquipments", (string)null);
                 });
 
             modelBuilder.Entity("SMART2.Domain.ProductionFacility", b =>
@@ -112,7 +112,7 @@ namespace SMART2.Migrations
 
                     b.HasIndex("EquipmentContractId");
 
-                    b.ToTable("ProductionFacilities");
+                    b.ToTable("ProductionFacilities", (string)null);
                 });
 
             modelBuilder.Entity("ProcessEquipmentEquipmentContracts", b =>

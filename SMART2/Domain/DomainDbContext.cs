@@ -27,7 +27,8 @@ namespace SMART2.Domain
                 .UsingEntity("ProcessEquipmentEquipmentContracts");
             builder.Entity<EquipmentContract>()
                 .HasMany(a => a.ProductionFacilities)
-                .WithOne(a => a.EquipmentContract);
+                .WithOne(a => a.EquipmentContract)
+                .HasForeignKey(a => a.EquipmentContractId);
         }
     }
 }
