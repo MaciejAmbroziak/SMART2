@@ -27,8 +27,8 @@ namespace SMART2.UnitTest
             new ProductionFacility { Name = "Room 2", StandardArea = 12.31, Code = "BBBBBBB12", Occupied = true },
             new ProductionFacility { Name = "Room 3", StandardArea = 14.2, Code = "1234567890", Occupied = true },
             new ProductionFacility { Name = "Room 4", StandardArea = 200, Code = "Lsingdlwnbgkj-12", Occupied = true },
-            new ProductionFacility { Name = "Room 5", StandardArea = 200, Code = "ABC 123456", Occupied = false },
-            new ProductionFacility { Name = "Room 6", StandardArea = 201, Code = "ABC 123456", Occupied = false }
+            new ProductionFacility { Name = "Room 5", StandardArea = 200, Code = "ABC 123456", Occupied = true },
+            new ProductionFacility { Name = "Room 6", StandardArea = 201, Code = "ABC 123456", Occupied = true }
         };
 
             _equipmentContractList = new List<EquipmentContract>
@@ -53,10 +53,10 @@ namespace SMART2.UnitTest
             var service = new ServiceController(context);
 
             // Act
-            var equipmentContracts = await service.GetEquipmentContracts();
+            var sut = await service.GetEquipmentContracts();
 
             // Assert
-            Assert.NotNull(equipmentContracts);
+            Assert.NotNull(sut);
         }
 
         [Fact]
@@ -73,10 +73,10 @@ namespace SMART2.UnitTest
             var service = new ServiceController(context);
 
             // Act
-            var equipmentContracts = await service.GetEquipmentContracts();
+            var sut = await service.GetEquipmentContracts();
 
             // Assert
-            Assert.NotNull(equipmentContracts.Value);
+            Assert.NotNull(sut.Value);
         }
 
         [Fact]
@@ -93,10 +93,10 @@ namespace SMART2.UnitTest
             var service = new ServiceController(context);
 
             // Act
-            var equipmentContracts = await service.GetEquipmentContracts();
+            var sut = await service.GetEquipmentContracts();
 
             // Assert
-            Assert.Equal(equipmentContracts.Value.Count(), _equipmentContractList.Count());
+            Assert.Equal(sut.Value.Count(), _equipmentContractList.Count());
         }
 
         [Fact]
@@ -113,10 +113,103 @@ namespace SMART2.UnitTest
             var service = new ServiceController(context);
 
             // Act
-            var equipmentContracts = await service.GetEquipmentContracts();
+            var sut = await service.GetEquipmentContracts();
 
             // Assert
-            Assert.Equal(equipmentContracts.Value, _equipmentContractList.AsEnumerable());
+            Assert.Equal(sut.Value, _equipmentContractList.AsEnumerable());
+        }
+
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        public async Task GetEquipmentContract_DoesNotReturnNull(int id)
+        {
+            // Arrange
+            var dbContextOptions = new DbContextOptionsBuilder<DomainDbContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString()).Options;
+            var context = new DomainDbContext(dbContextOptions);
+            context.AddRange(_processEquipmentList);
+            context.AddRange(_productionFacilityList);
+            context.AddRange(_equipmentContractList);
+            context.SaveChanges();
+            var service = new ServiceController(context);
+
+            // Act
+            var sut = await service.GetEquipmentContract(id);
+
+            //Asert
+            Assert.NotNull(sut);
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        public async Task GetEquipmentContract_Value_DoesNotReturnNull(int id)
+        {
+            // Arrange
+            var dbContextOptions = new DbContextOptionsBuilder<DomainDbContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString()).Options;
+            var context = new DomainDbContext(dbContextOptions);
+            context.AddRange(_processEquipmentList);
+            context.AddRange(_productionFacilityList);
+            context.AddRange(_equipmentContractList);
+            context.SaveChanges();
+            var service = new ServiceController(context);
+
+            // Act
+            var sut = await service.GetEquipmentContract(id);
+
+            //Asert
+            Assert.NotNull(sut.Value);
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        public async Task GetEquipmentContract_IfPRductionFacilityInEquipmentContract_HasValueOcupiedEqualsTrue(int id)
+        {
+            //Arrange
+            var dbContextOptions = new DbContextOptionsBuilder<DomainDbContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString()).Options;
+            var context = new DomainDbContext(dbContextOptions);
+            context.AddRange(_processEquipmentList);
+            context.AddRange(_productionFacilityList);
+            context.AddRange(_equipmentContractList);
+            context.SaveChanges();
+            var service = new ServiceController(context);
+
+            // Act
+            var sut = await service.GetEquipmentContract(id);
+
+            // Assert
+            Assert.True(sut.Value.ProductionFacilities.All(a=>a.Occupied));
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        public async Task GetEquipmentContract_ForEachContract_ReturnsTheSameEquipmentContract(int id)
+        {
+            // Arrange
+            var dbContextOptions = new DbContextOptionsBuilder<DomainDbContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString()).Options;
+            var context = new DomainDbContext(dbContextOptions);
+            context.AddRange(_processEquipmentList);
+            context.AddRange(_productionFacilityList);
+            context.AddRange(_equipmentContractList);
+            context.SaveChanges();
+            var service = new ServiceController(context);
+
+            // Act
+            var sut = await service.GetEquipmentContract(id);
+
+            // Assert
+            Assert.Equal(sut.Value, _equipmentContractList[id -1]);
         }
     }
 }
