@@ -98,5 +98,6 @@ namespace SMART2.UnitTest
             // Assert
             Assert.Equal(equipmentContracts.Value.Count(), _equipmentContractList.Count());
         }
+
     }
 }
