@@ -130,6 +130,7 @@ namespace SMART2.Controllers
             var processEquipments = new List<ProcessEquipment>();
 
             var processEquipment = _context.ProcessEquipments.Where(a => a.Code == processEquipmentCode);
+            var productionFacility = _context.ProductionFacilities.Where(a => a.Name == productionFacilityName);
 
             if (!processEquipment.Any())
             {
@@ -146,21 +147,37 @@ namespace SMART2.Controllers
                 processEquipments.Add(equipment);
             }
 
-            if (!_context.ProductionFacilities.Where(a => !a.Occupied).Any())
+            ProductionFacility thisproductionFacility;
+
+            try
             {
-                return BadRequest("There are no unoccupied facilities.");
+                thisproductionFacility = await productionFacility.FirstAsync();
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message + " Facility does not exist");
             }
 
-            var productionFacility = await _context.ProductionFacilities
-                .Where(a => a.Name == productionFacilityName)
-                .FirstOrDefaultAsync();
-
-            if (productionFacility == null)
+            if (thisproductionFacility.Occupied == true)
             {
-                return BadRequest("Production facility not found.");
+                return BadRequest("This facility is occupied.");
+            }
+            
+
+            if (!AreaAvailable(processEquipments, thisproductionFacility))
+            {
+                return BadRequest("There is not enough space");
             }
 
-            return await AddContractAsync(productionFacility, processEquipments);
+            var contract = new EquipmentContract();
+            contract.ProductionFacilities = productionFacility.ToList();
+            contract.ProcessEquipments = processEquipments;
+            contract.TotalEquipmentUnits = processEquipments.Count();
+
+            await _context.EquipmentContracts.AddAsync(contract);
+            await _context.SaveChangesAsync();
+
+            return contract;
         }
 
         // DELETE: api/Service/5
@@ -184,34 +201,6 @@ namespace SMART2.Controllers
             var processEquipmentTotalArea = processEquipment.Sum(a=>a.Area);
             var productionFacilityTotalArea = productionFacility.StandardArea;
             return productionFacilityTotalArea >= processEquipmentTotalArea;
-        }
-
-        private async Task<ActionResult<EquipmentContract>> AddContractAsync(ProductionFacility productionFacility, List<ProcessEquipment> processEquipments)
-        {
-            var facilities = new List<ProductionFacility>();
-
-            if (!AreaAvailable(processEquipments, productionFacility))
-            {
-                return BadRequest("There is not enough space");
-            }
-
-            var productionFacilityStandardArea = productionFacility.StandardArea;
-            var processEquipmentLargestArea = processEquipments.OrderBy(a => a.Area).First().Area;
-            if (productionFacilityStandardArea <= processEquipmentLargestArea)
-            {
-                return BadRequest("The facility is smaller than the smallest process equipment");
-            }
-           
-
-            var contract = new EquipmentContract();
-            contract.ProductionFacilities = facilities;
-            contract.ProcessEquipments = processEquipments;
-            contract.TotalEquipmentUnits = processEquipments.Count();
-
-            await _context.EquipmentContracts.AddAsync(contract);
-            await _context.SaveChangesAsync();
-
-            return Ok(contract);
         }
 
         private bool EquipmentContractExists(int id)

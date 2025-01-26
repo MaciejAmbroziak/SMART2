@@ -29,7 +29,8 @@ namespace SMART2.UnitTest
             new ProductionFacility { Name = "Room 4", StandardArea = 200, Code = "Lsingdlwnbgkj-12", Occupied = true },
             new ProductionFacility { Name = "Room 5", StandardArea = 200, Code = "ABC 123456", Occupied = true },
             new ProductionFacility { Name = "Room 6", StandardArea = 201, Code = "ABC 123456", Occupied = true },
-            new ProductionFacility { Name = "Room 7", StandardArea = 300, Code = "AAABB", Occupied = false}
+            new ProductionFacility { Name = "Room 7", StandardArea = 300, Code = "AAABB", Occupied = false},
+            new ProductionFacility { Name = "Room 8", StandardArea = 300, Code = "AAABBC", Occupied = false},
         };
 
             _equipmentContractList = new List<EquipmentContract>
@@ -215,7 +216,8 @@ namespace SMART2.UnitTest
 
         [Theory]
         [InlineData("Room 7", "swhdfuoirhgfweorgh", 3)]
-        public async Task PostEquipmentContractByParamters_ReturnsEquipmentContract_IfAllConditionsMet(string productionFacilityName, string processEquipmentCode, int equipmentQuantity)
+        [InlineData("Room 8", "wefjrwejwigtj", 7)]
+        public async Task PostEquipmentContractByParamters_ReturnsNuEquipmentContract_IfAllConditionsMet(string productionFacilityName, string processEquipmentCode, int equipmentQuantity)
         {
             // Arrange
             var dbContextOptions = new DbContextOptionsBuilder<DomainDbContext>()
@@ -230,8 +232,8 @@ namespace SMART2.UnitTest
             var processEquipmentsCreate = new List<ProcessEquipment>();
             var productionFacilitiesCreate = new List<ProductionFacility>();
 
-            var processEquipment = context.ProcessEquipments.Where(a=>a.Code == processEquipmentCode).FirstOrDefault();
-            var productionFacility = context.ProductionFacilities.Where(a => a.Name == productionFacilityName).FirstOrDefault();
+            var processEquipment = await context.ProcessEquipments.Where(a=>a.Code == processEquipmentCode).FirstOrDefaultAsync();
+            var productionFacility = await context.ProductionFacilities.Where(a => a.Name == productionFacilityName).FirstOrDefaultAsync();
 
             for (int i = 0; i < equipmentQuantity; i++) 
             {
@@ -251,8 +253,9 @@ namespace SMART2.UnitTest
 
             // Assert
             Assert.Equal(equipmentContract.TotalEquipmentUnits, sut.Value.TotalEquipmentUnits);
-            Assert.Equal(equipmentContract.ProductionFacilities.Count(), sut.Value.ProductionFacilities.Count());
-            Assert.Equal(equipmentContract.ProcessEquipments.Count(), sut.Value.ProcessEquipments.Count());
+            Assert.Equal(equipmentContract.ProcessEquipments, sut.Value.ProcessEquipments);
+            Assert.Equal(equipmentContract.ProductionFacilities, sut.Value.ProductionFacilities);
+
         }
 
 
